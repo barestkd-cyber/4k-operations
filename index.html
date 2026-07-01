@@ -120,6 +120,9 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 .ftab.active .ftab-count{color:var(--teal);}
 .ftab-label{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);}
 .ftab.active .ftab-label{color:var(--teal);}
+.filter-select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-family:var(--font);font-size:0.85rem;font-weight:700;padding:0.55rem 0.7rem;cursor:pointer;}
+.filter-select:focus{outline:none;border-color:var(--teal);color:var(--teal);}
+.filter-select option{background:var(--charcoal-mid);color:var(--text-muted);font-weight:600;}
 .controls-row{display:flex;gap:0.45rem;align-items:center;}
 .search-wrap{position:relative;flex:1;}
 .search-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.85rem;padding:0.48rem 0.8rem 0.48rem 2rem;}
@@ -410,12 +413,12 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 <!-- CONTACTS TAB -->
 <div class="tab-content active" id="tab-contacts">
   <div class="filter-bar">
-    <div class="filter-tabs">
-      <button class="ftab active" onclick="cFilter('all',this)"><span class="ftab-count" id="fc-all">0</span><span class="ftab-label">All</span></button>
-      <button class="ftab" onclick="cFilter('active',this)"><span class="ftab-count" id="fc-active">0</span><span class="ftab-label">Active</span></button>
-      <button class="ftab" onclick="cFilter('inactive',this)"><span class="ftab-count" id="fc-inactive">0</span><span class="ftab-label">Inactive</span></button>
-      <button class="ftab" onclick="cFilter('lead',this)"><span class="ftab-count" id="fc-lead">0</span><span class="ftab-label">Leads</span></button>
-    </div>
+    <select class="filter-select" id="c-filter-select" onchange="cFilter(this.value)" aria-label="Filter contacts by status">
+      <option value="active" id="fc-active" selected>Active</option>
+      <option value="lead" id="fc-lead">Lead</option>
+      <option value="inactive" id="fc-inactive">Inactive</option>
+      <option value="all" id="fc-all">All</option>
+    </select>
     <div class="controls-row">
       <div class="search-wrap"><span class="search-icon">🔍</span><input class="search-input" type="text" id="c-search" placeholder="Search..." oninput="renderContacts()"></div>
       <select class="sort-sel" id="c-sort" onchange="renderContacts()">
@@ -1003,7 +1006,7 @@ document.getElementById('fab').onclick=topbarAdd;
 // ══════════════════════════════════════════════════════════════════
 // CONTACTS
 // ══════════════════════════════════════════════════════════════════
-let cFilterState='all',cViewState='card',lSortCol='business',lSortDir=1;
+let cFilterState='active',cViewState='card',lSortCol='business',lSortDir=1;
 
 function cFilter(f,el){
   cFilterState=f;
@@ -1020,10 +1023,10 @@ function setCView(v){
   renderContacts();
 }
 function updateCounts(){
-  document.getElementById('fc-all').textContent=contacts.length;
-  document.getElementById('fc-active').textContent=contacts.filter(c=>c.status==='active').length;
-  document.getElementById('fc-inactive').textContent=contacts.filter(c=>c.status==='inactive').length;
-  document.getElementById('fc-lead').textContent=contacts.filter(c=>c.status==='lead').length;
+  document.getElementById('fc-all').textContent='All ('+contacts.length+')';
+  document.getElementById('fc-active').textContent='Active ('+contacts.filter(c=>c.status==='active').length+')';
+  document.getElementById('fc-inactive').textContent='Inactive ('+contacts.filter(c=>c.status==='inactive').length+')';
+  document.getElementById('fc-lead').textContent='Lead ('+contacts.filter(c=>c.status==='lead').length+')';
 }
 function getFiltered(){
   const q=(document.getElementById('c-search').value||'').toLowerCase();
