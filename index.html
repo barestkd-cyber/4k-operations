@@ -907,11 +907,22 @@ async function syncFromSupabase() {
       deletedEvents = {};
       del.forEach(row => { deletedEvents[row.id] = true; });
     }
-    if (l && l.length) leads = l;
+    if (l && l.length) leads = l.map(r => {
+      // Website leads store `tasks` as a JSON string; ops leads store a real array. Normalize both to arrays.
+      let tasks = r.tasks;
+      if (typeof tasks === 'string') { try { tasks = JSON.parse(tasks || '[]'); } catch { tasks = []; } }
+      return { ...r, tasks: Array.isArray(tasks) ? tasks : [] };
+    });
     if (p && p.length) prospects = p;
     if (s && s.length) staff = s;
     saveLocalCache();
-    renderContacts();
+    // Re-render whatever tab is currently active so freshly-synced data appears without a manual tab switch
+    if(currentTab==='contacts')renderContacts();
+    else if(currentTab==='schedule')renderCalendar();
+    else if(currentTab==='leads')renderTasks();
+    else if(currentTab==='reports'){initReports();renderReports();}
+    else if(currentTab==='staff')renderStaff();
+    else renderProspects();
   } catch (e) {
     console.error('syncFromSupabase failed:', e);
   } finally {
