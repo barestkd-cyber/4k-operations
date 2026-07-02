@@ -600,7 +600,7 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
   </div>
   <div class="drawer-tabs">
     <div class="d-tab active" onclick="switchDTab('overview',this)">Overview</div>
-    <div class="d-tab" onclick="switchDTab('tasks',this)">Tasks</div>
+    <div class="d-tab" onclick="switchDTab('tasks',this)">Follow-ups</div>
     <div class="d-tab" onclick="switchDTab('services',this)">Services</div>
     <div class="d-tab" onclick="switchDTab('invoices',this)">Invoices</div>
     <div class="d-tab" onclick="switchDTab('agreement',this)">Agreement</div>
@@ -624,8 +624,8 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
   </div>
   <div class="d-tab-content" id="dtab-tasks">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
-      <div class="profile-section-title" style="margin:0;">Tasks</div>
-      <button class="btn btn-ghost btn-sm" onclick="openContactTaskModal()">+ Task</button>
+      <div class="profile-section-title" style="margin:0;">Follow-ups</div>
+      <button class="btn btn-ghost btn-sm" onclick="openContactTaskModal()">+ Follow-up</button>
     </div>
     <div id="d-tasks"></div>
   </div>
@@ -816,12 +816,12 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 <div class="modal-overlay" id="task-modal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-header"><div class="modal-title">Add Task</div><button class="modal-close" onclick="closeTaskModal()">✕</button></div>
+    <div class="modal-header"><div class="modal-title">Add Follow-up</div><button class="modal-close" onclick="closeTaskModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-row"><div class="fg"><label>Action</label><select id="tf-action"><option value="Call">📞 Call</option><option value="Email">✉️ Email</option><option value="Quote">📋 Quote</option><option value="Callback">🔁 Callback</option></select></div><div class="fg"><label>Due Date</label><input type="date" id="tf-due"></div></div>
       <div class="form-row single"><div class="fg"><label>Note</label><input type="text" id="tf-note" placeholder="Reminder..."></div></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeTaskModal()">Cancel</button><button class="btn btn-primary" onclick="saveTaskModal()">Add Task</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeTaskModal()">Cancel</button><button class="btn btn-primary" onclick="saveTaskModal()">Add Follow-up</button></div>
   </div>
 </div>
 
@@ -1084,15 +1084,14 @@ function badgeHtml(s){
 function stagePill(s){return'<span class="badge badge-stage"><span class="dot" style="background:var(--teal)"></span>'+(s||'New')+'</span>';}
 function setLeadStage(v){
   const c=contacts.find(x=>x.id===activeContactId);if(!c)return;
-  c.stage=v;saveAll();
-  document.getElementById('d-meta').innerHTML=badgeHtml(c.status)+(c.status==='lead'?stagePill(v):'');
+  c.stage=v;saveAll();renderContacts();
 }
 let taskModalMode='lead';
 function saveTaskModal(){ if(taskModalMode==='contact')saveContactTask(); else saveTask(); }
 function renderContactTasks(c){
   const tasks=Array.isArray(c.tasks)?c.tasks:[];
   const el=document.getElementById('d-tasks');
-  if(!tasks.length){el.innerHTML='<div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;padding:0.5rem 0;">No tasks yet.</div>';return;}
+  if(!tasks.length){el.innerHTML='<div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;padding:0.5rem 0;">No follow-ups yet.</div>';return;}
   const apClass={Call:'ap-call',Email:'ap-email',Quote:'ap-quote',Callback:'ap-callback'};
   el.innerHTML=[...tasks].sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).map(function(t){
     const idx=tasks.indexOf(t);
@@ -1137,7 +1136,7 @@ function renderCards(arr){
     const ps=primarySvc(c);
     const nextEvent=nextEventForContact(c.id);
     return'<div class="contact-card" onclick="openDrawer(\''+c.id+'\')">'+
-      '<div class="card-top"><div><div class="card-name"><span class="status-dot '+sdClass(c.status)+'"></span>'+c.business+'</div>'+(c.contact?'<div class="card-contact-sub">'+c.contact+'</div>':'')+'</div>'+
+      '<div class="card-top"><div><div class="card-name"><span class="status-dot '+sdClass(c.status)+'"></span>'+c.business+'</div>'+(c.contact?'<div class="card-contact-sub">'+c.contact+'</div>':'')+(c.status==='lead'?'<div style="margin-top:0.3rem;">'+stagePill(c.stage||'New')+'</div>':'')+'</div>'+
       (ps?.rate?'<div class="card-rate-wrap"><div class="card-rate">$'+parseFloat(ps.rate).toFixed(0)+'</div><div class="card-rate-sub">per visit</div>'+(ps?.frequency?'<div class="card-rate-sub">'+freqLabel(ps.frequency,ps.customFreq)+'</div>':'')+'</div>':'')+'</div>'+
       (ps?.service?'<div class="card-tags"><span class="tag">'+ps.service+'</span>'+((c.services||[]).length>1?'<span class="tag" style="color:var(--teal);">+'+(c.services.length-1)+' more</span>':'')+'</div>':'')+
       '<div class="card-details">'+
@@ -1167,7 +1166,7 @@ function renderList(arr){
     const nextEvent=nextEventForContact(c.id);
     return'<tr class="lrow" onclick="openDrawer(\''+c.id+'\')">'+
       '<td><div class="lname">'+c.business+'</div></td>'+
-      '<td>'+badgeHtml(c.status)+'</td>'+
+      '<td>'+badgeHtml(c.status)+(c.status==='lead'?' '+stagePill(c.stage||'New'):'')+'</td>'+
       '<td class="lval '+(ps?.cleaner?'hi':'')+'">'+( ps?.cleaner||'—')+'</td>'+
       '<td class="lval '+(ps?.rate?'hi':'')+'">'+( ps?.rate?'$'+parseFloat(ps.rate).toFixed(0):'—')+'</td>'+
       '<td class="lval '+(ps?.frequency?'hi':'')+'">'+freqLabel(ps?.frequency,ps?.customFreq)+'</td>'+
@@ -1182,7 +1181,7 @@ function openDrawer(id){
   const c=contacts.find(x=>x.id===id);if(!c)return;
   activeContactId=id;activeSvcIdx=0;
   document.getElementById('d-name').textContent=c.business;
-  document.getElementById('d-meta').innerHTML=badgeHtml(c.status)+(c.status==='lead'?stagePill(c.stage||'New'):'');
+  document.getElementById('d-meta').innerHTML=badgeHtml(c.status);
   const _isLead=c.status==='lead';
   document.getElementById('d-stage-section').style.display=_isLead?'':'none';
   document.getElementById('d-stage').value=c.stage||'New';
