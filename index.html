@@ -89,6 +89,8 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 .badge-active{background:rgba(34,197,94,0.12);color:var(--green);}
 .badge-lead{background:var(--amber-glow);color:var(--amber);border:1px solid rgba(245,158,11,0.3);}
 .badge-stage{background:var(--teal-glow);color:var(--teal);border:1px solid rgba(20,184,166,0.3);}
+.badge-pending{background:var(--amber-glow);color:var(--amber);border:1px solid rgba(245,158,11,0.3);}
+.pending-banner{display:flex;align-items:center;justify-content:space-between;gap:0.6rem;background:var(--amber-glow);border:1px solid rgba(245,158,11,0.35);color:var(--amber);font-size:0.8rem;font-weight:700;padding:0.6rem 0.85rem;border-radius:var(--radius-sm);margin:0.75rem 1rem 0;}
 .badge-inactive{background:rgba(122,136,153,0.1);color:var(--text-muted);}
 .dot{width:5px;height:5px;border-radius:50%;}
 .tag{font-size:0.67rem;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);padding:0.12rem 0.45rem;border-radius:4px;white-space:nowrap;}
@@ -599,6 +601,7 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
     <div class="drawer-name" id="d-name"></div>
     <div id="d-meta" style="display:flex;gap:0.35rem;flex-wrap:wrap;"></div>
   </div>
+  <div id="d-pending-banner"></div>
   <div class="drawer-tabs">
     <div class="d-tab active" onclick="switchDTab('overview',this)">Overview</div>
     <div class="d-tab" onclick="switchDTab('tasks',this)">Follow-ups</div>
@@ -1038,6 +1041,7 @@ function badgeHtml(s){
   return'<span class="badge '+cls+'"><span class="dot" style="background:'+dot+'"></span>'+lbl+'</span>';
 }
 function stagePill(s){return'<span class="badge badge-stage"><span class="dot" style="background:var(--teal)"></span>'+(s||'New')+'</span>';}
+function pendingPill(){return'<span class="badge badge-pending"><span class="dot" style="background:var(--amber)"></span>PENDING</span>';}
 function setLeadStage(v){
   const c=contacts.find(x=>x.id===activeContactId);if(!c)return;
   c.stage=v;saveAll();renderContacts();
@@ -1090,7 +1094,7 @@ function renderCards(arr){
     const ps=primarySvc(c);
     const nextEvent=nextEventForContact(c.id);
     return'<div class="contact-card" onclick="openDrawer(\''+c.id+'\')">'+
-      '<div class="card-top"><div><div class="card-name"><span class="status-dot '+sdClass(c.status)+'"></span>'+c.business+'</div>'+(c.contact?'<div class="card-contact-sub">'+c.contact+'</div>':'')+(c.status==='lead'?'<div style="margin-top:0.3rem;">'+stagePill(c.stage||'New')+'</div>':'')+'</div>'+
+      '<div class="card-top"><div><div class="card-name"><span class="status-dot '+sdClass(c.status)+'"></span>'+c.business+'</div>'+(c.contact?'<div class="card-contact-sub">'+c.contact+'</div>':'')+(c.status==='lead'?'<div style="margin-top:0.3rem;">'+stagePill(c.stage||'New')+'</div>':'')+(c.status==='active'&&c.contractSigned===false?'<div style="margin-top:0.3rem;">'+pendingPill()+'</div>':'')+'</div>'+
       (ps?.rate?'<div class="card-rate-wrap"><div class="card-rate">$'+parseFloat(ps.rate).toFixed(0)+'</div><div class="card-rate-sub">per visit</div>'+(ps?.frequency?'<div class="card-rate-sub">'+freqLabel(ps.frequency,ps.customFreq)+'</div>':'')+'</div>':'')+'</div>'+
       (ps?.service?'<div class="card-tags"><span class="tag">'+ps.service+'</span>'+((c.services||[]).length>1?'<span class="tag" style="color:var(--teal);">+'+(c.services.length-1)+' more</span>':'')+'</div>':'')+
       '<div class="card-details">'+
@@ -1120,7 +1124,7 @@ function renderList(arr){
     const nextEvent=nextEventForContact(c.id);
     return'<tr class="lrow" onclick="openDrawer(\''+c.id+'\')">'+
       '<td><div class="lname">'+c.business+'</div></td>'+
-      '<td>'+badgeHtml(c.status)+(c.status==='lead'?' '+stagePill(c.stage||'New'):'')+'</td>'+
+      '<td>'+badgeHtml(c.status)+(c.status==='lead'?' '+stagePill(c.stage||'New'):'')+(c.status==='active'&&c.contractSigned===false?' '+pendingPill():'')+'</td>'+
       '<td class="lval '+(ps?.cleaner?'hi':'')+'">'+( ps?.cleaner||'—')+'</td>'+
       '<td class="lval '+(ps?.rate?'hi':'')+'">'+( ps?.rate?'$'+parseFloat(ps.rate).toFixed(0):'—')+'</td>'+
       '<td class="lval '+(ps?.frequency?'hi':'')+'">'+freqLabel(ps?.frequency,ps?.customFreq)+'</td>'+
@@ -1139,6 +1143,8 @@ function openDrawer(id){
   const _isLead=c.status==='lead';
   document.getElementById('d-stage-section').style.display=_isLead?'':'none';
   document.getElementById('d-stage').value=c.stage||'New';
+  const _pending=c.status==='active'&&c.contractSigned===false;
+  document.getElementById('d-pending-banner').innerHTML=_pending?'<div class="pending-banner"><span>⚠ PENDING — contract not signed</span><button class="btn btn-green btn-sm" onclick="markContractSigned()">Mark Signed</button></div>':'';
   document.getElementById('d-contact').textContent=c.contact||'—';
   document.getElementById('d-phone').innerHTML=c.phone?'<a href="tel:'+c.phone+'">'+c.phone+'</a>':'—';
   document.getElementById('d-email').innerHTML=c.email?'<a href="mailto:'+c.email+'">'+c.email+'</a>':'—';
@@ -1337,12 +1343,21 @@ function saveContact(){
   const biz=document.getElementById('cf-business').value.trim();
   if(!biz){alert('Business name required.');return;}
   const isNew=!editingContactId;
-  const data={business:biz,contact:document.getElementById('cf-contact').value.trim(),phone:document.getElementById('cf-phone').value.trim(),email:document.getElementById('cf-email').value.trim(),address:document.getElementById('cf-address').value.trim(),status:document.getElementById('cf-status').value,notes:document.getElementById('cf-notes').value.trim(),services:getSvcs()};
+  const newStatus=document.getElementById('cf-status').value;
+  const svcs=getSvcs();
+  const old=editingContactId?contacts.find(c=>c.id===editingContactId):null;
+  // Convert-to-client is the lead→active transition: require real service details before it can complete.
+  const becameActive=!!old&&old.status!=='active'&&newStatus==='active';
+  if(becameActive){
+    const primary=svcs[0];
+    if(!primary||!primary.rate||!primary.frequency){alert('To convert to a client, enter the service details (rate and frequency) first.');return;}
+  }
+  const data={business:biz,contact:document.getElementById('cf-contact').value.trim(),phone:document.getElementById('cf-phone').value.trim(),email:document.getElementById('cf-email').value.trim(),address:document.getElementById('cf-address').value.trim(),status:newStatus,notes:document.getElementById('cf-notes').value.trim(),services:svcs};
   if(editingContactId){
     const idx=contacts.findIndex(c=>c.id===editingContactId);
-    if(idx!==-1){const old=contacts[idx];data.id=editingContactId;data.invoices=old.invoices||[];data.balance=old.balance||'0';data.balanceDue=old.balanceDue||'';data.created=old.created;contacts[idx]=data;}
+    if(idx!==-1){data.id=editingContactId;data.invoices=old.invoices||[];data.balance=old.balance||'0';data.balanceDue=old.balanceDue||'';data.created=old.created;data.tasks=Array.isArray(old.tasks)?old.tasks:[];if(newStatus==='lead')data.stage=old.stage||'New';if(becameActive)data.contractSigned=false;else if(old.contractSigned!==undefined)data.contractSigned=old.contractSigned;contacts[idx]=data;}
   }else{
-    data.id=uid();data.created=new Date().toISOString();data.invoices=[];data.balance='0';data.balanceDue='';contacts.push(data);
+    data.id=uid();data.created=new Date().toISOString();data.invoices=[];data.balance='0';data.balanceDue='';data.tasks=[];contacts.push(data);
   }
   saveAll();closeContactModal();renderContacts();
   openDrawer(data.id||editingContactId);
@@ -1821,9 +1836,16 @@ function getAllLeads(){
 }
 function closeTaskModal(){document.getElementById('task-modal').classList.remove('open');}
 function convertToClient(){
-  // Leads are contacts now — converting flips the contact to an active client.
+  // Converting opens the contact form so service details are entered before the lead→active transition.
+  // saveContact enforces rate+frequency and sets contractSigned=false on that transition.
+  if(!activeContactId)return;
+  openContactModal(activeContactId);
+  document.getElementById('cm-title').textContent='Convert to Client';
+  document.getElementById('cf-status').value='active';
+}
+function markContractSigned(){
   const c=contacts.find(x=>x.id===activeContactId);if(!c)return;
-  c.status='active';delete c.stage;saveAll();renderContacts();openDrawer(c.id);
+  c.contractSigned=true;saveAll();renderContacts();openDrawer(c.id);
 }
 
 // ══════════════════════════════════════════════════════════════════
