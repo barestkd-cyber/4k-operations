@@ -410,7 +410,6 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 <div class="main-tabs">
   <div class="main-tab active" onclick="switchTab('contacts',this)">Contacts</div>
   <div class="main-tab" onclick="switchTab('schedule',this)">Schedule</div>
-  <div class="main-tab" onclick="switchTab('leads',this)" style="display:none;">Lead Flow</div>
   <div class="main-tab" onclick="switchTab('leadmgr',this)">Lead Manager</div>
   <div class="main-tab" onclick="switchTab('outreach',this)">Outreach</div>
   <div class="main-tab" onclick="switchTab('reports',this)">Reports</div>
@@ -475,21 +474,6 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
   </div>
   <div id="cal-grid-view"><div class="cal-wrap"><div class="cal-grid" id="cal-grid"></div></div></div>
   <div id="agenda-view" style="display:none;"><div class="agenda-wrap" id="agenda-wrap"></div></div>
-</div>
-
-<!-- LEADS TAB -->
-<div class="tab-content" id="tab-leads">
-  <div class="leads-toolbar">
-    <div class="lf-filter">
-      <button class="lf-btn active" onclick="lFilter('all',this)">All</button>
-      <button class="lf-btn" onclick="lFilter('overdue',this)">Overdue</button>
-      <button class="lf-btn" onclick="lFilter('today',this)">Today</button>
-      <button class="lf-btn" onclick="lFilter('upcoming',this)">Upcoming</button>
-      <button class="lf-btn" onclick="lFilter('done',this)">Done</button>
-    </div>
-    <button class="btn btn-ghost btn-sm" onclick="openLeadModal(null)" style="margin-left:auto;">+ Lead</button>
-  </div>
-  <div class="tasks-wrap" id="tasks-wrap"></div>
 </div>
 
 <!-- LEAD MANAGER TAB -->
@@ -636,6 +620,7 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
         <option value="Quoted">Quoted</option>
         <option value="Cold">Cold</option>
       </select>
+      <button class="btn btn-green btn-sm" style="margin-top:0.6rem;width:100%;" onclick="convertToClient()">→ Convert to Client</button>
     </div>
     <div class="profile-section"><div class="profile-section-title">Notes</div><div class="profile-notes" id="d-notes"></div></div>
   </div>
@@ -778,54 +763,6 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
       <div id="sh-preview" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.9rem;font-size:0.78rem;color:var(--text-muted);max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.7;font-family:monospace;"></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeShareModal()">Cancel</button><button class="btn btn-ghost btn-sm" onclick="emailSchedule()">📧 Email</button><button class="btn btn-primary" onclick="printSchedule()">🖨 Print</button></div>
-  </div>
-</div>
-
-<!-- LEAD MODAL -->
-<div class="modal-overlay" id="lead-modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-header"><div class="modal-title" id="lm-title">New Lead</div><button class="modal-close" onclick="closeLeadModal()">✕</button></div>
-    <div class="modal-body">
-      <div class="form-section">Lead Info</div>
-      <div class="form-row"><div class="fg"><label>Business Name *</label><input type="text" id="lf-biz"></div><div class="fg"><label>Contact Person</label><input type="text" id="lf-contact"></div></div>
-      <div class="form-row"><div class="fg"><label>Phone</label><input type="tel" id="lf-phone"></div><div class="fg"><label>Email</label><input type="email" id="lf-email"></div></div>
-      <div class="form-row"><div class="fg"><label>Service Interest</label><select id="lf-service"><option value="">Unknown</option><option>Airbnb Cleaning</option><option>Office Cleaning</option><option>Make Ready Cleaning</option><option>Church Cleaning</option><option>Other Commercial</option></select></div><div class="fg"><label>Source</label><select id="lf-source"><option>Cold Call</option><option>Website</option><option>Referral</option><option>Facebook</option><option>Walk-in</option><option>Other</option></select></div></div>
-      <div class="form-row single"><div class="fg"><label>Notes</label><textarea id="lf-notes" placeholder="What did they say?"></textarea></div></div>
-      <div class="form-section">First Task</div>
-      <div class="form-row"><div class="fg"><label>Action</label><select id="lf-action"><option value="Call">📞 Call</option><option value="Email">✉️ Email</option><option value="Quote">📋 Quote</option><option value="Callback">🔁 Callback</option></select></div><div class="fg"><label>Due Date</label><input type="date" id="lf-due"></div></div>
-      <div class="form-row single"><div class="fg"><label>Task Note</label><input type="text" id="lf-task-note" placeholder="e.g. Contract ends in 6 weeks"></div></div>
-    </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeLeadModal()">Cancel</button><button class="btn btn-primary" onclick="saveLead()">Save Lead</button></div>
-  </div>
-</div>
-
-<!-- LEAD DETAIL MODAL -->
-<div class="modal-overlay" id="lead-detail-modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div style="flex:1;min-width:0;"><div class="modal-title" id="ld-name"></div><div id="ld-pills" style="margin-top:0.28rem;display:flex;gap:0.35rem;flex-wrap:wrap;"></div></div>
-      <button class="modal-close" onclick="closeLeadDetail()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-bottom:1rem;">
-        <div><div style="font-size:0.7rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.15rem;">Phone</div><div style="font-size:0.83rem;color:var(--text);" id="ld-phone"></div></div>
-        <div><div style="font-size:0.7rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.15rem;">Email</div><div style="font-size:0.83rem;color:var(--text);" id="ld-email"></div></div>
-        <div><div style="font-size:0.7rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.15rem;">Service</div><div style="font-size:0.83rem;color:var(--text);" id="ld-service"></div></div>
-        <div><div style="font-size:0.7rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.15rem;">Source</div><div style="font-size:0.83rem;color:var(--text);" id="ld-source"></div></div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.75rem;font-size:0.82rem;color:var(--text-muted);line-height:1.65;margin-bottom:1rem;" id="ld-notes"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
-        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-dim);">Tasks</div>
-        <button class="btn btn-ghost btn-sm" onclick="openAddTaskModal()">+ Task</button>
-      </div>
-      <div id="ld-tasks"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger btn-sm" onclick="deleteLead()">Delete</button>
-      <div style="display:flex;gap:0.45rem;"><button class="btn btn-ghost btn-sm" onclick="closeLeadDetail()">Close</button><button class="btn btn-green btn-sm" onclick="convertToClient()">→ Convert to Client</button></div>
-    </div>
   </div>
 </div>
 
@@ -1105,8 +1042,7 @@ function setLeadStage(v){
   const c=contacts.find(x=>x.id===activeContactId);if(!c)return;
   c.stage=v;saveAll();renderContacts();
 }
-let taskModalMode='lead';
-function saveTaskModal(){ if(taskModalMode==='contact')saveContactTask(); else saveTask(); }
+function saveTaskModal(){ saveContactTask(); }
 function renderContactTasks(c){
   const tasks=Array.isArray(c.tasks)?c.tasks:[];
   const el=document.getElementById('d-tasks');
@@ -1130,7 +1066,6 @@ function renderContactTasks(c){
   }).join('');
 }
 function openContactTaskModal(){
-  taskModalMode='contact';
   document.getElementById('tf-action').value='Call';
   document.getElementById('tf-due').value=todayStr();
   document.getElementById('tf-note').value='';
@@ -1866,14 +1801,6 @@ function renderLeadAgenda(){
 // ══════════════════════════════════════════════════════════════════
 // LEADS
 // ══════════════════════════════════════════════════════════════════
-let leadFilter='all',activeLead=null,editingLeadId=null;
-
-function lFilter(f,el){
-  leadFilter=f;
-  document.querySelectorAll('.lf-btn').forEach(b=>b.classList.remove('active'));
-  if(el)el.classList.add('active');
-  renderTasks();
-}
 function taskStatus(t){
   if(t.done)return'done';
   const td=todayStr();
@@ -1892,151 +1819,11 @@ function getAllLeads(){
   });
   return all;
 }
-function renderTasks(){
-  const container=document.getElementById('tasks-wrap');
-  const allLeads=getAllLeads();
-  let allTasks=[];
-  allLeads.forEach(lead=>{
-    (lead.tasks||[]).forEach((task,ti)=>{
-      const status=taskStatus(task);
-      if(leadFilter!=='all'&&status!==leadFilter)return;
-      allTasks.push({lead,task,ti,status});
-    });
-  });
-  const order={overdue:0,today:1,upcoming:2,done:3};
-  allTasks.sort((a,b)=>order[a.status]!==order[b.status]?order[a.status]-order[b.status]:(a.task.due||'9999').localeCompare(b.task.due||'9999'));
-  if(!allTasks.length){
-    const msg=leadFilter==='done'?'No completed tasks':'No tasks yet';
-    const sub=leadFilter==='all'?'Add a lead and set a follow-up task.':'No tasks in this category.';
-    container.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">'+msg+'</div><div class="empty-sub">'+sub+'</div></div>';
-    return;
-  }
-  const apClass={Call:'ap-call',Email:'ap-email',Quote:'ap-quote',Callback:'ap-callback'};
-  let html='';let lastGroup='';
-  allTasks.forEach(function(item){
-    const lead=item.lead,task=item.task,status=item.status;
-    const group=task.done?'Done':!task.due?'No Date':task.due<todayStr()?'Overdue':task.due===todayStr()?'Today':fmtDate(task.due);
-    if(group!==lastGroup){
-      const hc=group==='Overdue'?'overdue':group==='Today'?'today':'';
-      html+='<div class="task-group-hdr '+hc+'">'+group+'</div>';lastGroup=group;
-    }
-    html+='<div class="task-card '+status+'" onclick="openLeadDetail(\''+lead.id+'\')">'+
-      '<div class="tc-top"><div class="tc-biz">'+lead.business+'</div><span class="action-pill '+(apClass[task.action]||'ap-call')+'">'+task.action+'</span></div>'+
-      (task.note?'<div class="tc-note">'+task.note+'</div>':'')+
-      '<div class="tc-footer"><div class="tc-time">'+(task.due?fmtDate(task.due):'No date')+(lead.phone?' · '+lead.phone:'')+'</div>'+
-      '<button class="done-btn '+(task.done?'done':'')+'" onclick="event.stopPropagation();toggleDone(\''+lead.id+'\','+item.ti+')">'+(task.done?'✓ Done':'Mark Done')+'</button></div>'+
-      '</div>';
-  });
-  container.innerHTML=html;
-}
-function toggleDone(leadId,ti){
-  const lead=leads.find(l=>l.id===leadId);if(!lead)return;
-  lead.tasks[ti].done=!lead.tasks[ti].done;
-  saveAll();renderTasks();
-}
-function openLeadModal(id){
-  editingLeadId=id;
-  document.getElementById('lm-title').textContent=id?'Edit Lead':'New Lead';
-  const l=id?leads.find(x=>x.id===id):null;
-  document.getElementById('lf-biz').value=l?.business||'';
-  document.getElementById('lf-contact').value=l?.contact||'';
-  document.getElementById('lf-phone').value=l?.phone||'';
-  document.getElementById('lf-email').value=l?.email||'';
-  document.getElementById('lf-service').value=l?.service||'';
-  document.getElementById('lf-source').value=l?.source||'Cold Call';
-  document.getElementById('lf-notes').value=l?.notes||'';
-  document.getElementById('lf-action').value='Call';
-  document.getElementById('lf-due').value=todayStr();
-  document.getElementById('lf-task-note').value='';
-  document.getElementById('lead-modal').classList.add('open');
-}
-function closeLeadModal(){document.getElementById('lead-modal').classList.remove('open');}
-function saveLead(){
-  const biz=document.getElementById('lf-biz').value.trim();
-  if(!biz){alert('Business name required.');return;}
-  const task={id:uid(),action:document.getElementById('lf-action').value,due:document.getElementById('lf-due').value,note:document.getElementById('lf-task-note').value.trim(),done:false,created:new Date().toISOString()};
-  if(editingLeadId){
-    const idx=leads.findIndex(l=>l.id===editingLeadId);
-    if(idx!==-1){leads[idx].business=biz;leads[idx].contact=document.getElementById('lf-contact').value.trim();leads[idx].phone=document.getElementById('lf-phone').value.trim();leads[idx].email=document.getElementById('lf-email').value.trim();leads[idx].service=document.getElementById('lf-service').value;leads[idx].source=document.getElementById('lf-source').value;leads[idx].notes=document.getElementById('lf-notes').value.trim();}
-  }else{
-    leads.push({id:uid(),business:biz,contact:document.getElementById('lf-contact').value.trim(),phone:document.getElementById('lf-phone').value.trim(),email:document.getElementById('lf-email').value.trim(),service:document.getElementById('lf-service').value,source:document.getElementById('lf-source').value,notes:document.getElementById('lf-notes').value.trim(),tasks:[task],created:new Date().toISOString()});
-  }
-  saveAll();closeLeadModal();renderTasks();
-}
-function openLeadDetail(id){
-  const allLeads=getAllLeads();
-  const lead=allLeads.find(l=>l.id===id);if(!lead)return;
-  activeLead=id;
-  document.getElementById('ld-name').textContent=lead.business;
-  document.getElementById('ld-pills').innerHTML='<span class="badge badge-lead"><span class="dot" style="background:var(--amber)"></span>Lead</span>'+(lead.service?'<span class="tag">'+lead.service+'</span>':'')+(lead.source?'<span class="tag">'+lead.source+'</span>':'');
-  document.getElementById('ld-phone').textContent=lead.phone||'—';
-  document.getElementById('ld-email').textContent=lead.email||'—';
-  document.getElementById('ld-service').textContent=lead.service||'—';
-  document.getElementById('ld-source').textContent=lead.source||'—';
-  document.getElementById('ld-notes').textContent=lead.notes||'No notes.';
-  renderLeadTasks(lead);
-  document.getElementById('lead-detail-modal').classList.add('open');
-}
-function closeLeadDetail(){document.getElementById('lead-detail-modal').classList.remove('open');activeLead=null;}
-function renderLeadTasks(lead){
-  const tasks=lead.tasks||[];
-  const apClass={Call:'ap-call',Email:'ap-email',Quote:'ap-quote',Callback:'ap-callback'};
-  document.getElementById('ld-tasks').innerHTML=tasks.length?[...tasks].sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).map(function(t){
-    const st=taskStatus(t);
-    const tc=st==='overdue'?'var(--red)':st==='today'?'var(--teal)':'var(--text-dim)';
-    return'<div class="task-hist-item">'+
-      '<div style="flex:1;min-width:0;">'+
-      '<div style="display:flex;align-items:center;gap:0.35rem;margin-bottom:0.15rem;"><span class="action-pill '+(apClass[t.action]||'ap-call')+'" style="font-size:0.62rem;">'+t.action+'</span>'+
-      '<span style="font-size:0.7rem;color:'+tc+';">'+(t.due?fmtDate(t.due):'No date')+'</span></div>'+
-      (t.note?'<div style="font-size:0.76rem;color:var(--text-muted);">'+t.note+'</div>':'')+
-      '</div>'+
-      '<button class="done-btn '+(t.done?'done':'')+'" onclick="toggleDetailDone(\''+lead.id+'\','+tasks.indexOf(t)+')">'+(t.done?'✓':'Done')+'</button>'+
-      '</div>';
-  }).join(''):'<div style="font-size:0.82rem;color:var(--text-dim);font-style:italic;">No tasks yet.</div>';
-}
-function toggleDetailDone(leadId,ti){
-  const lead=leads.find(l=>l.id===leadId);if(!lead)return;
-  lead.tasks[ti].done=!lead.tasks[ti].done;
-  saveAll();
-  const allLeads=getAllLeads();renderLeadTasks(allLeads.find(l=>l.id===leadId)||lead);
-  renderTasks();
-}
-function openAddTaskModal(){
-  taskModalMode='lead';
-  document.getElementById('tf-action').value='Call';
-  document.getElementById('tf-due').value=todayStr();
-  document.getElementById('tf-note').value='';
-  document.getElementById('task-modal').classList.add('open');
-}
 function closeTaskModal(){document.getElementById('task-modal').classList.remove('open');}
-function saveTask(){
-  if(!activeLead)return;
-  let lead=leads.find(l=>l.id===activeLead);
-  if(!lead){
-    // virtual lead — promote to real
-    const allLeads=getAllLeads();const vl=allLeads.find(l=>l.id===activeLead);if(!vl)return;
-    lead={id:uid(),business:vl.business,contact:vl.contact||'',phone:vl.phone||'',email:vl.email||'',service:vl.service||'',source:'Contact',notes:vl.notes||'',tasks:[],created:new Date().toISOString(),contactId:vl.contactId};
-    leads.push(lead);activeLead=lead.id;
-  }
-  if(!lead.tasks)lead.tasks=[];
-  lead.tasks.push({id:uid(),action:document.getElementById('tf-action').value,due:document.getElementById('tf-due').value,note:document.getElementById('tf-note').value.trim(),done:false,created:new Date().toISOString()});
-  saveAll();closeTaskModal();renderLeadTasks(lead);renderTasks();
-}
-function deleteLead(){
-  if(!activeLead)return;
-  leads=leads.filter(l=>l.id!==activeLead);
-  saveAll();closeLeadDetail();renderTasks();
-}
 function convertToClient(){
-  if(!activeLead)return;
-  const lead=leads.find(l=>l.id===activeLead);if(!lead)return;
-  if(lead.contactId){const c=contacts.find(x=>x.id===lead.contactId);if(c){c.status='active';saveAll();}}
-  else if(!contacts.find(c=>c.business===lead.business)){
-    contacts.push({id:uid(),business:lead.business,contact:lead.contact||'',phone:lead.phone||'',email:lead.email||'',address:'',status:'active',notes:lead.notes||'',services:[{service:lead.service||'',frequency:'',address:'',rate:'',monthlyRate:'',cleanerRate:'',tax:'taxable',cleaner:'',hours:'',nextclean:'',extraCleaners:[]}],invoices:[],balance:'0',balanceDue:'',created:new Date().toISOString()});
-    saveAll();
-  }
-  lead.converted=true;saveAll();closeLeadDetail();renderTasks();renderContacts();
-  alert(lead.business+' converted to active client.');
+  // Leads are contacts now — converting flips the contact to an active client.
+  const c=contacts.find(x=>x.id===activeContactId);if(!c)return;
+  c.status='active';delete c.stage;saveAll();renderContacts();openDrawer(c.id);
 }
 
 // ══════════════════════════════════════════════════════════════════
