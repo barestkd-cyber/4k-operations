@@ -25,6 +25,9 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 .topbar{background:var(--charcoal-mid);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1rem;height:52px;position:sticky;top:0;z-index:200;}
 .topbar-logo{font-family:var(--font-display);font-size:1.35rem;letter-spacing:0.05em;color:var(--white);}
 .topbar-logo span{color:var(--teal);}
+#login-screen input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.9rem;padding:0.6rem 0.8rem;margin-top:0.3rem;}
+#login-screen label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);}
+#login-screen .lg-group{margin-bottom:0.9rem;}
 .main-tabs{display:flex;background:var(--charcoal-mid);border-bottom:2px solid var(--border);position:sticky;top:52px;z-index:199;overflow-x:auto;}
 .main-tabs::-webkit-scrollbar{display:none;}
 .main-tab{flex-shrink:0;padding:0.7rem 1rem;text-align:center;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s;white-space:nowrap;border-right:1px solid var(--border);}
@@ -401,11 +404,27 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 </head>
 <body>
 
+<div id="login-screen" style="position:fixed;inset:0;z-index:1000;background:var(--charcoal);display:flex;align-items:center;justify-content:center;padding:1.5rem;">
+  <div style="width:100%;max-width:360px;">
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="font-family:var(--font-display);font-size:1.7rem;letter-spacing:0.05em;color:white;"><span style="color:var(--teal);">4K</span> OPS</div>
+      <div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.35rem;">Sign in to continue</div>
+    </div>
+    <form id="login-form" onsubmit="return doLogin(event)">
+      <div class="lg-group"><label>Email</label><input type="email" id="login-email" required autocomplete="username"></div>
+      <div class="lg-group"><label>Password</label><input type="password" id="login-password" required autocomplete="current-password"></div>
+      <button type="submit" class="btn btn-primary" id="login-btn" style="width:100%;">Sign In</button>
+      <p id="login-error" style="display:none;color:var(--red);font-size:0.82rem;margin-top:0.85rem;text-align:center;"></p>
+    </form>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="topbar-logo"><span>4K</span> OPS</div>
   <div style="display:flex;gap:0.4rem;align-items:center;">
     <button class="btn btn-ghost btn-sm" id="share-btn" style="display:none;" onclick="openShareModal()">📤 Share</button>
     <button class="btn btn-primary btn-sm" id="topbar-add-btn" onclick="topbarAdd()">+ Contact</button>
+    <button class="btn btn-ghost btn-sm" onclick="signOut()" title="Sign out">Sign out</button>
   </div>
 </div>
 
@@ -796,6 +815,7 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════
 // DATA LAYER
@@ -806,12 +826,19 @@ const _today=new Date();
 const SB_URL='https://twohzspcpnoeoutxdcdz.supabase.co';
 const SB_KEY='sb_publishable_MbIxbCay3ePDbYBd68jC5g_8n_fNiI6';
 
+// ── AUTH (Supabase) ──
+const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
+let authToken = null;      // current user's JWT; kept fresh via onAuthStateChange
+let currentUser = null;    // {id,email,role,name} — loaded after login
+// Keep the access token fresh across refreshes so sbFetch never sends a stale JWT
+sb.auth.onAuthStateChange((event, session)=>{ authToken = session?.access_token || null; });
+
 async function sbFetch(path,options={}){
   const res=await fetch(SB_URL+'/rest/v1/'+path,{
     ...options,
     headers:{
       'apikey':SB_KEY,
-      'Authorization':'Bearer '+SB_KEY,
+      'Authorization':'Bearer '+(authToken||SB_KEY),
       'Content-Type':'application/json',
       'Prefer':options.prefer||'return=representation',
       ...(options.headers||{})
@@ -2492,8 +2519,50 @@ document.addEventListener('keydown',function(e){
   },{passive:true});
 })();
 
-renderContacts();
-syncFromSupabase();
+// ── AUTH GATING / BOOT ──
+function showLogin(){ document.getElementById('login-screen').style.display='flex'; }
+function bootApp(){
+  document.getElementById('login-screen').style.display='none';
+  renderContacts();
+  syncFromSupabase();
+}
+async function loadCurrentUser(){
+  try{
+    const { data:{ user } } = await sb.auth.getUser();
+    if(!user)return;
+    const rows = await sbFetch('profiles?select=role,name,email&id=eq.'+user.id);
+    currentUser = { id:user.id, email:user.email, role:(rows&&rows[0]&&rows[0].role)||null, name:(rows&&rows[0]&&rows[0].name)||null };
+  }catch(e){ console.error('loadCurrentUser failed:',e); }
+}
+async function doLogin(e){
+  e.preventDefault();
+  const btn=document.getElementById('login-btn'), err=document.getElementById('login-error');
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  btn.disabled=true;btn.textContent='Signing in...';err.style.display='none';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){
+    err.textContent=error.message||'Sign in failed.';err.style.display='block';
+    btn.disabled=false;btn.textContent='Sign In';
+    return false;
+  }
+  authToken=data.session.access_token;
+  await loadCurrentUser();
+  bootApp();
+  return false;
+}
+async function signOut(){
+  try{ await sb.auth.signOut(); }catch(e){}
+  ['4k_v2_contacts','4k_v2_events','4k_v2_overrides','4k_v2_deleted','4k_v2_leads','4k_v2_prospects','4k_v2_staff'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+(async function initAuth(){
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session){ authToken=session.access_token; await loadCurrentUser(); bootApp(); }
+    else { showLogin(); }
+  }catch(e){ console.error('initAuth failed:',e); showLogin(); }
+})();
 </script>
 
 <!-- STAFF MODAL -->
