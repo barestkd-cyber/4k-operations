@@ -866,6 +866,36 @@ function saveLocalCache(){
 }
 let dbReady = false;
 
+// ── Normalizers: every row in a bulk upsert must share an IDENTICAL key set (else PostgREST PGRST102),
+// and every key must be a real column (else PGRST204). Each emits the canonical app-managed column set.
+// Events carry camel/snake duplicate columns in the DB; the app authors camelCase, so we write camelCase
+// (falling back to the snake value if only that was populated, so no legacy data is lost).
+function normContact(c){return{
+  id:c.id, business:c.business||'', contact:c.contact||'', phone:c.phone||'', email:c.email||'',
+  address:c.address||'', status:c.status||'lead', notes:c.notes||'',
+  services:Array.isArray(c.services)?c.services:[], invoices:Array.isArray(c.invoices)?c.invoices:[],
+  balance:c.balance||'0', balanceDue:c.balanceDue||'', created:c.created||new Date().toISOString(),
+  stage:c.stage??null, tasks:Array.isArray(c.tasks)?c.tasks:[],
+  contractSigned:(typeof c.contractSigned==='boolean')?c.contractSigned:null
+};}
+function normEvent(e){return{
+  id:e.id, type:e.type||'clean', title:e.title||'', contactId:e.contactId??e.contact_id??'',
+  date:e.date||'', start:e.start??e.start_time??'', duration:e.duration||'',
+  cleaners:Array.isArray(e.cleaners)?e.cleaners:[], address:e.address||'', notes:e.notes||'',
+  recur:e.recur||'none', recurN:e.recurN??e.recur_n??'', recurEnd:e.recurEnd??e.recur_end??'',
+  recurCount:e.recurCount??e.recur_count??'', recurUntil:e.recurUntil??e.recur_until??''
+};}
+function normProspect(p){return{
+  id:p.id, name:p.name||'', phone:p.phone||'', service:p.service||'', address:p.address||'',
+  notes:p.notes||'', status:p.status||'new', source:p.source??null, created:p.created||new Date().toISOString()
+};}
+function normStaff(s){return{
+  id:s.id, name:s.name||'', phone:s.phone||'', email:s.email||'', address:s.address||'',
+  emergency:s.emergency||'', status:s.status||'active', paytype:s.paytype||'', rate:s.rate||'',
+  paysched:s.paysched||'', notes:s.notes||'', availability:Array.isArray(s.availability)?s.availability:[],
+  role:s.role??null, created:s.created||new Date().toISOString()
+};}
+
 async function syncToSupabase() {
   try {
     const upsert = async (table, rows) => {
@@ -876,12 +906,13 @@ async function syncToSupabase() {
         body: JSON.stringify(rows)
       });
     };
-    await upsert('contacts', contacts);
-    await upsert('events', baseEvents);
+    await upsert('contacts', contacts.map(normContact));
+    await upsert('events', baseEvents.map(normEvent));
     await upsert('leads', leads);
-    await upsert('prospects', prospects);
-    await upsert('staff', staff);
-    const overrideRows = Object.entries(eventOverrides).map(([k, v]) => ({ id: k, ...v }));
+    await upsert('prospects', prospects.map(normProspect));
+    await upsert('staff', staff.map(normStaff));
+    // event_overrides stores the override payload in a `data` jsonb column (not top-level fields)
+    const overrideRows = Object.entries(eventOverrides).map(([k, v]) => ({ id: k, event_id: k.split('|')[0], date: k.split('|')[1], data: v }));
     const deletedRows = Object.entries(deletedEvents).map(([k]) => ({ id: k }));
     if (overrideRows.length) await upsert('event_overrides', overrideRows);
     if (deletedRows.length) await upsert('deleted_events', deletedRows);
@@ -910,7 +941,7 @@ async function syncFromSupabase() {
     if (ev && ev.length) baseEvents = ev;
     if (ov && ov.length) {
       eventOverrides = {};
-      ov.forEach(row => { const { id, ...rest } = row; eventOverrides[id] = rest; });
+      ov.forEach(row => { eventOverrides[row.id] = row.data || {}; });
     }
     if (del && del.length) {
       deletedEvents = {};
