@@ -859,6 +859,18 @@ async function sbFetch(path,options={}){
   const text=await res.text();
   return text?JSON.parse(text):null;
 }
+// Hard delete rows from Supabase. Returns true ONLY if the DELETE succeeded — callers must check
+// this before removing from the local array, else a silently-failed delete resurrects on refresh.
+async function sbDelete(table, filter){
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/'+table+'?'+filter,{
+      method:'DELETE',
+      headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+(authToken||SB_KEY), 'Prefer':'return=minimal' }
+    });
+    if(!res.ok){ console.error('Supabase DELETE failed ['+table+'?'+filter+']:', await res.text()); return false; }
+    return true;
+  }catch(e){ console.error('Supabase DELETE error ['+table+']:', e); return false; }
+}
 let contacts=JSON.parse(localStorage.getItem('4k_v2_contacts')||'[]');
 let baseEvents=JSON.parse(localStorage.getItem('4k_v2_events')||'[]');
 let eventOverrides=JSON.parse(localStorage.getItem('4k_v2_overrides')||'{}');
@@ -1321,10 +1333,13 @@ function deleteContactConfirm(){
   showConfirm('Delete Contact?','Delete '+c.business+'? This cannot be undone.',deleteContact);
 }
 function cancelDeleteContact(){}
-function deleteContact(){
+async function deleteContact(){
   if(!activeContactId)return;
-  contacts=contacts.filter(x=>x.id!==activeContactId);
-  saveAll();closeDrawer();renderContacts();
+  const id=activeContactId;
+  const ok=await sbDelete('contacts','id=eq.'+encodeURIComponent(id));
+  if(!ok){alert('Could not delete this contact — it was not removed from the server. Check your connection and try again.');return;}
+  contacts=contacts.filter(x=>x.id!==id);
+  saveLocalCache();closeDrawer();renderContacts();
 }
 function editContact(){
   const id=activeContactId;closeDrawer();openContactModal(id);
@@ -1770,13 +1785,19 @@ function applyScope(scope){
   const key=pendingKey;const action=pendingAction;closeScopeModal();
   if(action==='edit')doEdit(scope,key);else doDelete(scope,key);
 }
-function doDelete(scope,key){
+async function doDelete(scope,key){
   const sid=key.split('|')[0];const d=key.split('|')[1];
   if(scope==='this'){deletedEvents[key]=true;}
   else if(scope==='future'){
     const base=baseEvents.find(e=>e.id===sid);
     if(base)occurrences(base).filter(x=>x>=d).forEach(x=>{deletedEvents[sid+'|'+x]=true;});
   }else{
+    // Hard-delete the base row from Supabase FIRST; only remove locally if the server delete succeeded.
+    const ok=await sbDelete('events','id=eq.'+encodeURIComponent(sid));
+    if(!ok){alert('Could not delete this event — it was not removed from the server. Check your connection and try again.');return;}
+    // Orphan cleanup (part of series delete): drop this series' overrides and occurrence-tombstones too.
+    await sbDelete('event_overrides','event_id=eq.'+encodeURIComponent(sid));
+    await sbDelete('deleted_events','id=like.'+encodeURIComponent(sid)+'%7C*');
     baseEvents=baseEvents.filter(e=>e.id!==sid);
     Object.keys(eventOverrides).forEach(k=>{if(k.startsWith(sid+'|'))delete eventOverrides[k];});
     Object.keys(deletedEvents).forEach(k=>{if(k.startsWith(sid+'|'))delete deletedEvents[k];});
@@ -2467,8 +2488,11 @@ function switchSdTab(tab,el){
 function editStaff(){const id=activeStaffId;closeStaffDrawer();openStaffModal(id);}
 function deleteStaff(){
   if(!activeStaffId)return;const s=staff.find(x=>x.id===activeStaffId);if(!s)return;
-  showConfirm('Delete Staff Member?','Delete '+s.name+'? This cannot be undone.',function(){
-    staff=staff.filter(x=>x.id!==activeStaffId);saveStaffData();closeStaffDrawer();renderStaff();
+  showConfirm('Delete Staff Member?','Delete '+s.name+'? This cannot be undone.',async function(){
+    const id=activeStaffId;
+    const ok=await sbDelete('staff','id=eq.'+encodeURIComponent(id));
+    if(!ok){alert('Could not delete this staff member — it was not removed from the server. Check your connection and try again.');return;}
+    staff=staff.filter(x=>x.id!==id);saveStaffData();closeStaffDrawer();renderStaff();
   });
 }
 function renderStaffSchedule(s){
@@ -2589,6 +2613,7 @@ function showLogin(){ document.getElementById('login-screen').style.display='fle
 // ── CHANGELOG / WHAT'S NEW ──
 // Author newest-first. Bump `id` when you ship. "Unseen" = id > the user's last_seen_changelog.
 const CHANGELOG = [
+  { id: 6, date: '2026-07-02', title: 'Deletes now stick', body: 'Removing an event, contact, or staff member is now permanent — it deletes from the server and won\'t reappear after a refresh.' },
   { id: 5, date: '2026-07-02', title: 'New services: Gym & Floor Cleaning', body: 'Gym Cleaning and Floor Cleaning are now selectable service types — in contact services, prospects, and the website quote forms.' },
   { id: 4, date: '2026-07-02', title: 'Daily frequency + add your own cleaners', body: 'Cleaning frequency now includes Daily (in services and repeating schedule events), and you can add cleaner names under Staff — new cleaners show up in the cleaner dropdowns immediately.' },
   { id: 3, date: '2026-07-02', title: 'Monthly rate on cards & profiles', body: 'Monthly-billed clients now show their rate on the roster card and in the service detail. (When both a per-visit and a monthly rate are set, the per-visit rate is shown.)' },
