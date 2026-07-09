@@ -1153,7 +1153,7 @@ function renderCards(arr){
     const nextEvent=nextEventForContact(c.id);
     return'<div class="contact-card" onclick="openDrawer(\''+c.id+'\')">'+
       '<div class="card-top"><div><div class="card-name"><span class="status-dot '+sdClass(c.status)+'"></span>'+c.business+'</div>'+(c.contact?'<div class="card-contact-sub">'+c.contact+'</div>':'')+(c.status==='lead'?'<div style="margin-top:0.3rem;">'+stagePill(c.stage||'New')+'</div>':'')+(c.status==='active'&&c.contractSigned===false?'<div style="margin-top:0.3rem;">'+pendingPill()+'</div>':'')+'</div>'+
-      (ps?.rate?'<div class="card-rate-wrap"><div class="card-rate">$'+parseFloat(ps.rate).toFixed(0)+'</div><div class="card-rate-sub">per visit</div>'+(ps?.frequency?'<div class="card-rate-sub">'+freqLabel(ps.frequency,ps.customFreq)+'</div>':'')+'</div>':'')+'</div>'+
+      ((ps?.rate||ps?.monthlyRate)?'<div class="card-rate-wrap"><div class="card-rate">$'+parseFloat(ps.rate||ps.monthlyRate).toFixed(0)+'</div><div class="card-rate-sub">'+(ps.rate?'per visit':'per month')+'</div>'+(ps?.frequency?'<div class="card-rate-sub">'+freqLabel(ps.frequency,ps.customFreq)+'</div>':'')+'</div>':'')+'</div>'+
       (ps?.service?'<div class="card-tags"><span class="tag">'+ps.service+'</span>'+((c.services||[]).length>1?'<span class="tag" style="color:var(--teal);">+'+(c.services.length-1)+' more</span>':'')+'</div>':'')+
       '<div class="card-details">'+
       (c.phone?'<div class="card-detail-row"><span class="card-detail-label">Phone</span><span class="card-detail-value"><a href="tel:'+c.phone+'" onclick="event.stopPropagation()">'+c.phone+'</a></span></div>':'')+
@@ -1248,6 +1248,7 @@ function renderSvcDetail(c,i){
     '<div class="pf"><span class="pf-label">Frequency</span><span class="pf-value">'+freqLabel(s.frequency,s.customFreq)+'</span></div>'+
     '<div class="pf"><span class="pf-label">Address</span><span class="pf-value">'+(s.address||c.address||'—')+'</span></div>'+
     '<div class="pf"><span class="pf-label">Rate/visit</span><span class="pf-value">'+(s.rate?'$'+parseFloat(s.rate).toFixed(2):'—')+'</span></div>'+
+    '<div class="pf"><span class="pf-label">Monthly Rate</span><span class="pf-value">'+(s.monthlyRate?'$'+parseFloat(s.monthlyRate).toFixed(2)+'/mo':'—')+'</span></div>'+
     '<div class="pf"><span class="pf-label">Tax</span><span class="pf-value">'+(s.tax==='exempt'?'Tax Exempt':'Taxable (8.25%)')+'</span></div>'+
     '<div class="pf"><span class="pf-label">Cleaner Pay</span><span class="pf-value">'+(s.cleanerRate?'$'+parseFloat(s.cleanerRate).toFixed(2):'—')+'</span></div>'+
     '<div class="pf"><span class="pf-label">Primary Cleaner</span><span class="pf-value">'+(s.cleaner||'Unassigned')+'</span></div>'+
