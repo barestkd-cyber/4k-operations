@@ -28,6 +28,13 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 #login-screen input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.9rem;padding:0.6rem 0.8rem;margin-top:0.3rem;}
 #login-screen label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);}
 #login-screen .lg-group{margin-bottom:0.9rem;}
+.cl-entry{padding:0.8rem 0;border-bottom:1px solid var(--border);}
+.cl-entry:last-child{border-bottom:none;}
+.cl-entry-top{display:flex;align-items:center;gap:0.5rem;}
+.cl-entry-title{font-weight:700;font-size:0.92rem;color:var(--text);}
+.cl-new{font-size:0.58rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;background:var(--teal-glow);color:var(--teal);border:1px solid var(--border-teal);padding:0.08rem 0.35rem;border-radius:50px;}
+.cl-entry-date{font-size:0.7rem;color:var(--text-dim);margin-top:0.1rem;}
+.cl-entry-body{font-size:0.83rem;color:var(--text-muted);line-height:1.55;margin-top:0.35rem;}
 .main-tabs{display:flex;background:var(--charcoal-mid);border-bottom:2px solid var(--border);position:sticky;top:52px;z-index:199;overflow-x:auto;}
 .main-tabs::-webkit-scrollbar{display:none;}
 .main-tab{flex-shrink:0;padding:0.7rem 1rem;text-align:center;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s;white-space:nowrap;border-right:1px solid var(--border);}
@@ -424,6 +431,7 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
   <div style="display:flex;gap:0.4rem;align-items:center;">
     <button class="btn btn-ghost btn-sm" id="share-btn" style="display:none;" onclick="openShareModal()">📤 Share</button>
     <button class="btn btn-primary btn-sm" id="topbar-add-btn" onclick="topbarAdd()">+ Contact</button>
+    <button class="btn btn-ghost btn-sm" onclick="openChangelog()" title="What's New" style="position:relative;">What's New<span id="whatsnew-badge" style="display:none;position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--teal);color:var(--white);font-size:0.6rem;font-weight:800;align-items:center;justify-content:center;">0</span></button>
     <button class="btn btn-ghost btn-sm" onclick="signOut()" title="Sign out">Sign out</button>
   </div>
 </div>
@@ -2553,17 +2561,55 @@ document.addEventListener('keydown',function(e){
 
 // ── AUTH GATING / BOOT ──
 function showLogin(){ document.getElementById('login-screen').style.display='flex'; }
+// ── CHANGELOG / WHAT'S NEW ──
+// Author newest-first. Bump `id` when you ship. "Unseen" = id > the user's last_seen_changelog.
+const CHANGELOG = [
+  { id: 3, date: '2026-07-02', title: 'Monthly rate on cards & profiles', body: 'Monthly-billed clients now show their rate on the roster card and in the service detail. (When both a per-visit and a monthly rate are set, the per-visit rate is shown.)' },
+  { id: 2, date: '2026-07-02', title: 'Secure sign-in', body: 'The ops tool is now behind a login — only authorized users can reach client data. Use the Sign out button when you\'re done, especially on a shared device.' },
+  { id: 1, date: '2026-07-01', title: 'Lead Manager', body: 'New Lead Manager tab: a sortable List of all leads by stage, and an Agenda that gathers every lead follow-up by due date (Overdue / Today / Upcoming).' },
+];
+function changelogMaxId(){ return CHANGELOG.reduce((m,e)=>Math.max(m,e.id),0); }
+function unseenChangelog(){ const seen=(currentUser&&currentUser.lastSeenChangelog)||0; return CHANGELOG.filter(e=>e.id>seen); }
+function updateWhatsNewBadge(){
+  const b=document.getElementById('whatsnew-badge'); if(!b)return;
+  const n=unseenChangelog().length;
+  b.textContent=n; b.style.display=n?'inline-flex':'none';
+}
+function renderChangelogModal(entries){
+  const seen=(currentUser&&currentUser.lastSeenChangelog)||0;
+  document.getElementById('changelog-list').innerHTML=entries.map(e=>
+    '<div class="cl-entry">'+
+    '<div class="cl-entry-top"><span class="cl-entry-title">'+e.title+'</span>'+(e.id>seen?'<span class="cl-new">New</span>':'')+'</div>'+
+    '<div class="cl-entry-date">'+fmtDate(e.date)+'</div>'+
+    '<div class="cl-entry-body">'+e.body+'</div>'+
+    '</div>'
+  ).join('');
+  document.getElementById('changelog-modal').classList.add('open');
+}
+async function markChangelogSeen(){
+  const max=changelogMaxId();
+  if(currentUser) currentUser.lastSeenChangelog=max;
+  updateWhatsNewBadge();
+  try{ await sb.rpc('mark_changelog_seen',{ v: max }); }catch(e){ console.error('mark_changelog_seen failed:',e); }
+}
+function openChangelog(){ renderChangelogModal(CHANGELOG); }         // reopen: show ALL entries
+function closeChangelog(){ document.getElementById('changelog-modal').classList.remove('open'); markChangelogSeen(); }
+function maybeShowChangelog(){ if(unseenChangelog().length) renderChangelogModal(CHANGELOG); }
+
 function bootApp(){
   document.getElementById('login-screen').style.display='none';
   renderContacts();
   syncFromSupabase();
+  updateWhatsNewBadge();
+  maybeShowChangelog();
 }
 async function loadCurrentUser(){
   try{
     const { data:{ user } } = await sb.auth.getUser();
     if(!user)return;
-    const rows = await sbFetch('profiles?select=role,name,email&id=eq.'+user.id);
-    currentUser = { id:user.id, email:user.email, role:(rows&&rows[0]&&rows[0].role)||null, name:(rows&&rows[0]&&rows[0].name)||null };
+    const rows = await sbFetch('profiles?select=role,name,email,last_seen_changelog&id=eq.'+user.id);
+    const p=(rows&&rows[0])||{};
+    currentUser = { id:user.id, email:user.email, role:p.role||null, name:p.name||null, lastSeenChangelog:p.last_seen_changelog||0 };
   }catch(e){ console.error('loadCurrentUser failed:',e); }
 }
 async function doLogin(e){
@@ -2696,6 +2742,16 @@ async function signOut(){
       <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
       <button class="btn btn-danger" id="confirm-ok-btn">Delete</button>
     </div>
+  </div>
+</div>
+
+<!-- CHANGELOG / WHAT'S NEW MODAL -->
+<div class="modal-overlay" id="changelog-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">✨ What's New</div><button class="modal-close" onclick="closeChangelog()">✕</button></div>
+    <div class="modal-body"><div id="changelog-list"></div></div>
+    <div class="modal-footer"><button class="btn btn-primary" onclick="closeChangelog()">Got it</button></div>
   </div>
 </div>
 
