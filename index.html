@@ -546,6 +546,8 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
         <button class="svc-tag" onclick="pFilter('Office',this)">Office</button>
         <button class="svc-tag" onclick="pFilter('Make Ready',this)">Make Ready</button>
         <button class="svc-tag" onclick="pFilter('Church',this)">Church</button>
+        <button class="svc-tag" onclick="pFilter('Gym',this)">Gym</button>
+        <button class="svc-tag" onclick="pFilter('Floor',this)">Floor</button>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openProspectModal(null)" style="margin-left:auto;">+ Prospect</button>
     </div>
@@ -709,7 +711,7 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 <template id="svc-tpl">
   <div class="svc-block">
     <div class="svc-block-hdr"><span class="svc-block-label">Service 1</span><button type="button" class="btn btn-danger btn-sm svc-rm" onclick="removeSvcBlock(this)" style="display:none;">Remove</button></div>
-    <div class="form-row"><div class="fg"><label>Service Type</label><select class="sf-service"><option value="">Select...</option><option>Airbnb Cleaning</option><option>Office Cleaning</option><option>Make Ready Cleaning</option><option>Church Cleaning</option><option>Other Commercial</option></select></div><div class="fg"><label>Frequency</label><select class="sf-freq" onchange="toggleSvcCustom(this)"><option value="">Select...</option><option value="recurring-daily">Daily</option><option value="recurring-weekly">Weekly</option><option value="recurring-biweekly">Biweekly</option><option value="recurring-monthly">Monthly</option><option value="as-needed">As Needed</option><option value="one-time">One-Time</option><option value="custom">Custom...</option></select></div></div>
+    <div class="form-row"><div class="fg"><label>Service Type</label><select class="sf-service"><option value="">Select...</option><option>Airbnb Cleaning</option><option>Office Cleaning</option><option>Make Ready Cleaning</option><option>Church Cleaning</option><option>Gym Cleaning</option><option>Floor Cleaning</option><option>Other Commercial</option></select></div><div class="fg"><label>Frequency</label><select class="sf-freq" onchange="toggleSvcCustom(this)"><option value="">Select...</option><option value="recurring-daily">Daily</option><option value="recurring-weekly">Weekly</option><option value="recurring-biweekly">Biweekly</option><option value="recurring-monthly">Monthly</option><option value="as-needed">As Needed</option><option value="one-time">One-Time</option><option value="custom">Custom...</option></select></div></div>
     <div class="form-row single sf-custom-row" style="display:none;"><div class="fg"><label>Custom Frequency</label><input type="text" class="sf-custom-freq" placeholder="e.g. 3x/week"></div></div>
     <div class="form-row single"><div class="fg"><label>Service Address</label><input type="text" class="sf-address"></div></div>
     <div class="form-row"><div class="fg"><label>Client Rate ($/visit)</label><input type="number" class="sf-rate" min="0" step="0.01"></div><div class="fg"><label>Monthly Rate ($)</label><input type="number" class="sf-monthly" min="0" step="0.01"></div></div>
@@ -817,7 +819,7 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
     <div class="modal-header"><div class="modal-title" id="pm-title">Add Prospect</div><button class="modal-close" onclick="closeProspectModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-row"><div class="fg"><label>Business Name *</label><input type="text" id="pf-name"></div><div class="fg"><label>Phone</label><input type="tel" id="pf-phone"></div></div>
-      <div class="form-row"><div class="fg"><label>Service Type</label><select id="pf-service"><option>Airbnb Cleaning</option><option>Office Cleaning</option><option>Make Ready Cleaning</option><option>Church Cleaning</option><option>Other</option></select></div><div class="fg"><label>Address / Area</label><input type="text" id="pf-address"></div></div>
+      <div class="form-row"><div class="fg"><label>Service Type</label><select id="pf-service"><option>Airbnb Cleaning</option><option>Office Cleaning</option><option>Make Ready Cleaning</option><option>Church Cleaning</option><option>Gym Cleaning</option><option>Floor Cleaning</option><option>Other</option></select></div><div class="fg"><label>Address / Area</label><input type="text" id="pf-address"></div></div>
       <div class="form-row single"><div class="fg"><label>Notes</label><textarea id="pf-notes"></textarea></div></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeProspectModal()">Cancel</button><button class="btn btn-primary" onclick="saveProspect()">Save</button></div>
@@ -2587,6 +2589,7 @@ function showLogin(){ document.getElementById('login-screen').style.display='fle
 // ── CHANGELOG / WHAT'S NEW ──
 // Author newest-first. Bump `id` when you ship. "Unseen" = id > the user's last_seen_changelog.
 const CHANGELOG = [
+  { id: 5, date: '2026-07-02', title: 'New services: Gym & Floor Cleaning', body: 'Gym Cleaning and Floor Cleaning are now selectable service types — in contact services, prospects, and the website quote forms.' },
   { id: 4, date: '2026-07-02', title: 'Daily frequency + add your own cleaners', body: 'Cleaning frequency now includes Daily (in services and repeating schedule events), and you can add cleaner names under Staff — new cleaners show up in the cleaner dropdowns immediately.' },
   { id: 3, date: '2026-07-02', title: 'Monthly rate on cards & profiles', body: 'Monthly-billed clients now show their rate on the roster card and in the service detail. (When both a per-visit and a monthly rate are set, the per-visit rate is shown.)' },
   { id: 2, date: '2026-07-02', title: 'Secure sign-in', body: 'The ops tool is now behind a login — only authorized users can reach client data. Use the Sign out button when you\'re done, especially on a shared device.' },
