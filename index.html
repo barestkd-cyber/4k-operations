@@ -590,7 +590,8 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
       <button class="sf-btn" onclick="staffFilter('active',this)">Active</button>
       <button class="sf-btn" onclick="staffFilter('inactive',this)">Inactive</button>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="openStaffModal(null)" style="margin-left:auto;">+ Staff</button>
+    <button class="btn btn-ghost btn-sm" onclick="quickAddCleaner()" style="margin-left:auto;">+ Add Cleaner</button>
+    <button class="btn btn-ghost btn-sm" onclick="openStaffModal(null)">+ Staff</button>
   </div>
   <div class="staff-wrap" id="staff-list"></div>
 </div>
@@ -708,14 +709,14 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
 <template id="svc-tpl">
   <div class="svc-block">
     <div class="svc-block-hdr"><span class="svc-block-label">Service 1</span><button type="button" class="btn btn-danger btn-sm svc-rm" onclick="removeSvcBlock(this)" style="display:none;">Remove</button></div>
-    <div class="form-row"><div class="fg"><label>Service Type</label><select class="sf-service"><option value="">Select...</option><option>Airbnb Cleaning</option><option>Office Cleaning</option><option>Make Ready Cleaning</option><option>Church Cleaning</option><option>Other Commercial</option></select></div><div class="fg"><label>Frequency</label><select class="sf-freq" onchange="toggleSvcCustom(this)"><option value="">Select...</option><option value="recurring-weekly">Weekly</option><option value="recurring-biweekly">Biweekly</option><option value="recurring-monthly">Monthly</option><option value="as-needed">As Needed</option><option value="one-time">One-Time</option><option value="custom">Custom...</option></select></div></div>
+    <div class="form-row"><div class="fg"><label>Service Type</label><select class="sf-service"><option value="">Select...</option><option>Airbnb Cleaning</option><option>Office Cleaning</option><option>Make Ready Cleaning</option><option>Church Cleaning</option><option>Other Commercial</option></select></div><div class="fg"><label>Frequency</label><select class="sf-freq" onchange="toggleSvcCustom(this)"><option value="">Select...</option><option value="recurring-daily">Daily</option><option value="recurring-weekly">Weekly</option><option value="recurring-biweekly">Biweekly</option><option value="recurring-monthly">Monthly</option><option value="as-needed">As Needed</option><option value="one-time">One-Time</option><option value="custom">Custom...</option></select></div></div>
     <div class="form-row single sf-custom-row" style="display:none;"><div class="fg"><label>Custom Frequency</label><input type="text" class="sf-custom-freq" placeholder="e.g. 3x/week"></div></div>
     <div class="form-row single"><div class="fg"><label>Service Address</label><input type="text" class="sf-address"></div></div>
     <div class="form-row"><div class="fg"><label>Client Rate ($/visit)</label><input type="number" class="sf-rate" min="0" step="0.01"></div><div class="fg"><label>Monthly Rate ($)</label><input type="number" class="sf-monthly" min="0" step="0.01"></div></div>
     <div class="form-row"><div class="fg"><label>Cleaner Pay ($)</label><input type="number" class="sf-cpay" min="0" step="0.01"></div><div class="fg"><label>Tax</label><select class="sf-tax"><option value="taxable">Taxable (8.25%)</option><option value="exempt">Tax Exempt</option></select></div></div>
-    <div class="form-row"><div class="fg"><label>Primary Cleaner</label><select class="sf-cleaner"><option value="">Unassigned</option><option>Maria G.</option><option>James T.</option><option>Sandra K.</option><option>David R.</option></select></div><div class="fg"><label>Est. Hours/Visit</label><input type="number" class="sf-hours" min="0" step="0.5"></div></div>
+    <div class="form-row"><div class="fg"><label>Primary Cleaner</label><select class="sf-cleaner"><option value="">Unassigned</option></select></div><div class="fg"><label>Est. Hours/Visit</label><input type="number" class="sf-hours" min="0" step="0.5"></div></div>
     <div class="form-row single"><div class="fg"><label>Extra Cleaners</label>
-      <div style="display:flex;gap:0.4rem;"><select class="sf-extra-sel" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-family:var(--font);font-size:0.86rem;padding:0.5rem 0.7rem;"><option value="">Add cleaner...</option><option>Maria G.</option><option>James T.</option><option>Sandra K.</option><option>David R.</option></select><button type="button" class="btn btn-ghost btn-sm" onclick="addExtraCleaner(this)">+ Add</button></div>
+      <div style="display:flex;gap:0.4rem;"><select class="sf-extra-sel" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-family:var(--font);font-size:0.86rem;padding:0.5rem 0.7rem;"><option value="">Add cleaner...</option></select><button type="button" class="btn btn-ghost btn-sm" onclick="addExtraCleaner(this)">+ Add</button></div>
       <div class="sf-extra-chips" data-cleaners="[]" style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.4rem;"></div>
     </div></div>
   </div>
@@ -736,12 +737,12 @@ body{font-family:var(--font);background:var(--charcoal);color:var(--text);min-he
       <div class="form-row"><div class="fg"><label>Duration (hrs)</label><input type="number" id="ef-duration" min="0.5" step="0.5" value="2"></div><div class="fg"></div></div>
       <div class="form-section">Cleaners <span style="font-size:0.65rem;color:var(--text-dim);text-transform:none;letter-spacing:0;font-weight:400;">(first = primary ★)</span></div>
       <div class="form-row single"><div class="fg">
-        <div style="display:flex;gap:0.4rem;"><select id="ef-cleaner-add" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-family:var(--font);font-size:0.86rem;padding:0.5rem 0.7rem;"><option value="">Add cleaner...</option><option>Maria G.</option><option>James T.</option><option>Sandra K.</option><option>David R.</option></select><button type="button" class="btn btn-ghost btn-sm" onclick="addEventCleaner()">+ Add</button></div>
+        <div style="display:flex;gap:0.4rem;"><select id="ef-cleaner-add" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-family:var(--font);font-size:0.86rem;padding:0.5rem 0.7rem;"><option value="">Add cleaner...</option></select><button type="button" class="btn btn-ghost btn-sm" onclick="addEventCleaner()">+ Add</button></div>
         <div id="ef-cleaners" style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.4rem;"></div>
       </div></div>
       <div class="form-section">Notes &amp; Recurrence</div>
       <div class="form-row single"><div class="fg"><label>Notes</label><textarea id="ef-notes"></textarea></div></div>
-      <div class="form-row"><div class="fg"><label>Repeat</label><select id="ef-recur" onchange="toggleRecur()"><option value="none">Does not repeat</option><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="custom">Custom (every N weeks)</option></select></div><div class="fg" id="ef-n-wrap" style="display:none;"><label>Every N weeks</label><input type="number" id="ef-recur-n" min="1" step="1" value="3"></div></div>
+      <div class="form-row"><div class="fg"><label>Repeat</label><select id="ef-recur" onchange="toggleRecur()"><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="custom">Custom (every N weeks)</option></select></div><div class="fg" id="ef-n-wrap" style="display:none;"><label>Every N weeks</label><input type="number" id="ef-recur-n" min="1" step="1" value="3"></div></div>
       <div id="ef-recur-end-wrap" style="display:none;">
         <div class="form-row"><div class="fg"><label>End</label><select id="ef-recur-end" onchange="toggleRecurEnd()"><option value="never">No end date</option><option value="count">After N occurrences</option><option value="until">By date</option></select></div><div class="fg" id="ef-count-wrap"><label>Occurrences</label><input type="number" id="ef-recur-count" min="2" value="12"></div></div>
         <div class="form-row single" id="ef-until-wrap" style="display:none;"><div class="fg"><label>End Date</label><input type="date" id="ef-recur-until"></div></div>
@@ -991,7 +992,7 @@ function addWeeks(s,n){return addDays(s,n*7);}
 function fmtTime(t){if(!t)return'';const[h,m]=t.split(':').map(Number);return(h%12||12)+':'+String(m).padStart(2,'0')+' '+(h>=12?'PM':'AM');}
 function fmtDate(s){if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 function fmtDateFull(s){if(!s)return'';return new Date(s+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});}
-function freqLabel(f,c){if(f==='custom')return c||'Custom';return{'recurring-weekly':'Weekly','recurring-biweekly':'Biweekly','recurring-monthly':'Monthly','as-needed':'As Needed','one-time':'One-Time'}[f]||f||'—';}
+function freqLabel(f,c){if(f==='custom')return c||'Custom';return{'recurring-daily':'Daily','recurring-weekly':'Weekly','recurring-biweekly':'Biweekly','recurring-monthly':'Monthly','as-needed':'As Needed','one-time':'One-Time'}[f]||f||'—';}
 function nextEventForContact(contactId){
   if(!contactId)return null;
   const c=contacts.find(x=>x.id===contactId);
@@ -1346,6 +1347,15 @@ function openContactModal(id){
   document.getElementById('contact-modal').classList.add('open');
 }
 function closeContactModal(){document.getElementById('contact-modal').classList.remove('open');}
+// Cleaners are staff records — dropdowns source from the staff list (inactive staff excluded).
+function cleanerNames(){return staff.filter(s=>s.status!=='inactive').map(s=>s.name).filter(Boolean);}
+function populateCleanerOptions(sel,current){
+  if(!sel)return;
+  const names=cleanerNames();
+  if(current&&!names.includes(current))names.push(current); // keep a saved legacy name selectable
+  sel.querySelectorAll('option:not([value=""])').forEach(o=>o.remove());
+  names.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
+}
 function toggleSvcCustom(sel){sel.closest('.svc-block').querySelector('.sf-custom-row').style.display=sel.value==='custom'?'block':'none';}
 function addSvcBlock(data){
   const tpl=document.getElementById('svc-tpl');
@@ -1355,6 +1365,8 @@ function addSvcBlock(data){
   const idx=container.querySelectorAll('.svc-block').length;
   block.querySelector('.svc-block-label').textContent='Service '+(idx+1);
   if(idx>0)block.querySelector('.svc-rm').style.display='';
+  populateCleanerOptions(block.querySelector('.sf-cleaner'),data?.cleaner);
+  populateCleanerOptions(block.querySelector('.sf-extra-sel'));
   if(data){
     block.querySelector('.sf-service').value=data.service||'';
     block.querySelector('.sf-freq').value=data.frequency||'';
@@ -1471,6 +1483,7 @@ function occurrences(ev,max=300){
     if(maxD&&cur>maxD)break;
     out.push(cur);n++;
     if(ev.recur==='monthly'){const d=new Date(cur+'T00:00:00');d.setMonth(d.getMonth()+1);cur=d.toISOString().slice(0,10);}
+    else if(ev.recur==='daily')cur=addDays(cur,1);
     else cur=addWeeks(cur,wks);
   }
   return out;
@@ -1675,6 +1688,7 @@ function openEventModal(date){
   document.getElementById('ef-recur-count').value='12';
   document.getElementById('ef-recur-until').value='';
   document.getElementById('ef-svc-row').style.display='none';
+  populateCleanerOptions(document.getElementById('ef-cleaner-add'));
   renderECleaners();toggleRecur();populateEventContacts();
   document.getElementById('event-modal').classList.add('open');
 }
@@ -1787,6 +1801,7 @@ function doEdit(scope,key){
   document.getElementById('ef-recur-count').value=base?.recurCount||'12';
   document.getElementById('ef-recur-until').value=base?.recurUntil||'';
   document.getElementById('ef-svc-row').style.display='none';
+  populateCleanerOptions(document.getElementById('ef-cleaner-add'));
   renderECleaners();populateEventContacts();document.getElementById('ef-contact').value=ev.contactId||'';
   toggleRecur();document.getElementById('event-modal').classList.add('open');
 }
@@ -2345,6 +2360,14 @@ function openContractById(contractId){
 let staff=JSON.parse(localStorage.getItem('4k_v2_staff')||'[]');
 let activeStaffId=null,editingStaffId=null,staffFilterState='all';
 function saveStaffData(){localStorage.setItem('4k_v2_staff',JSON.stringify(staff));}
+// Quick-add: a cleaner IS a minimal staff record (just a name; full profile can be filled in later).
+function quickAddCleaner(){
+  const name=prompt('Cleaner name');if(name===null)return;
+  const n=name.trim();if(!n)return;
+  if(staff.find(s=>(s.name||'').toLowerCase()===n.toLowerCase())){alert(n+' is already in Staff.');return;}
+  staff.push({id:uid(),name:n,phone:'',email:'',address:'',emergency:'',status:'active',paytype:'',rate:'',paysched:'',notes:'',availability:[],created:new Date().toISOString()});
+  saveAll();renderStaff();
+}
 function staffFilter(f,el){staffFilterState=f;document.querySelectorAll('.sf-btn').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');renderStaff();}
 function renderStaff(){
   const container=document.getElementById('staff-list');if(!container)return;
@@ -2564,6 +2587,7 @@ function showLogin(){ document.getElementById('login-screen').style.display='fle
 // ── CHANGELOG / WHAT'S NEW ──
 // Author newest-first. Bump `id` when you ship. "Unseen" = id > the user's last_seen_changelog.
 const CHANGELOG = [
+  { id: 4, date: '2026-07-02', title: 'Daily frequency + add your own cleaners', body: 'Cleaning frequency now includes Daily (in services and repeating schedule events), and you can add cleaner names under Staff — new cleaners show up in the cleaner dropdowns immediately.' },
   { id: 3, date: '2026-07-02', title: 'Monthly rate on cards & profiles', body: 'Monthly-billed clients now show their rate on the roster card and in the service detail. (When both a per-visit and a monthly rate are set, the per-visit rate is shown.)' },
   { id: 2, date: '2026-07-02', title: 'Secure sign-in', body: 'The ops tool is now behind a login — only authorized users can reach client data. Use the Sign out button when you\'re done, especially on a shared device.' },
   { id: 1, date: '2026-07-01', title: 'Lead Manager', body: 'New Lead Manager tab: a sortable List of all leads by stage, and an Agenda that gathers every lead follow-up by due date (Overdue / Today / Upcoming).' },
